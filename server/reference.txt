@@ -1,0 +1,40 @@
+ssh -i "AWS_YYMore_KEY.pem" ubuntu@ec2-34-216-42-194.us-west-2.compute.amazonaws.com
+
+
+
+https://msdn.microsoft.com/zh-cn/vsto/dn551370
+http://www.gpac-licensing.com/2014/08/21/ibc-2014-dash-avc264-support-in-gpac/
+https://gpac.wp.imt.fr/mp4box/mp4box-documentation/
+http://www.jianshu.com/p/ad8544e2d3fd
+https://bitmovin.com/mp4box-dash-content-generation-x264/
+https://gist.github.com/ddennedy/16b7d0c15843829b4dc4
+https://blog.streamroot.io/encode-multi-bitrate-videos-mpeg-dash-mse-based-media-players/
+https://blog.streamroot.io/encode-multi-bitrate-videos-mpeg-dash-mse-based-media-players-22/
+http://blog.csdn.net/beautyfuel/article/details/53464705
+https://gpac.wp.imt.fr/2012/02/01/dash-support/
+https://developer.mozilla.org/en-US/Apps/Fundamentals/Audio_and_video_delivery/Setting_up_adaptive_streaming_media_sources#MPEG-DASH_Encoding
+https://developer.mozilla.org/en-US/docs/Web/HTML/DASH_Adaptive_Streaming_for_HTML_5_Video
+https://stackoverflow.com/questions/30979714/how-to-change-keyframe-interval-in-ffmpeg
+http://jagt.github.io/clumsy/index.html
+https://www.keycdn.com/support/how-to-convert-mp4-to-hls/
+https://ffmpeg.org/ffmpeg-formats.html#hls-2
+http://www.bogotobogo.com/VideoStreaming/ffmpeg_http_live_streaming_hls.php
+http://www.tothenew.com/blog/adaptive-video-streaming-hls/
+
+use x264 to get raw video stream with different bandwidth, set same interval between keyframes
+x264 --output 500k.264 --fps 24 --preset slow --bitrate 500 --vbv-maxrate 1000 --vbv-bufsize 2000 --min-keyint 48 --keyint 48 --scenecut 0 --no-scenecut --pass 1 --video-filter "resize:width=1280,height=720" original.mp4
+
+MPEG-Dash
+use MP4Box to enables DASH segmentation and forces segments to begin with random access points. segment length is set to be 4000ms.
+method 1
+all fragments of each bandwidth stored in a fragmented-mp4 file, audio track is directly used from original video file.
+MP4Box -dash 4000 -rap -frag-rap -out ../Dash_Whole/Dash_Whole.mpd 1500k.mp4 1000k.mp4 500k.mp4 200k.mp4 original.mp4#audio
+
+method 2
+each segment is stored seperatly in a m4s file, different MPD files are formed. They are combined manually into one MPD file.
+MP4Box -dash 4000 -frag 4000 -rap -segment-name 1500k/1500k_segment_ 1500k.mp4
+
+HLS
+use FFMPEG 
+ffmpeg -i 200k.mp4 -c:v h264 -flags +cgop -g 48 -hls_time 4 -hls_list_size 0 -hls_segment_filename '200k_%03d.ts' 200k.m3u8
+ffmpeg -i original.mp4 -vn -c:a aac -flags +cgop -g 48 -hls_time 4 -hls_list_size 0 -hls_segment_filename 'audio_%03d.ts' -strict -2 audio.m3u8
